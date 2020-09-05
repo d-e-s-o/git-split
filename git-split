@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# Copyright (C) 2020 Daniel Mueller <deso@posteo.net>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+set -e -o pipefail
+
+SUBDIRECTORY_OK=1
+source "$(git --exec-path)/git-sh-setup"
+
+cd_to_toplevel
+require_clean_work_tree $cmd
+
+has_no_changes() {
+  git diff --quiet --exit-code
+}
+
+head=$(git rev-parse HEAD)
+git reset HEAD^ --quiet
+git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
+
+while :; do
+  git commit --no-verify --patch --reedit-message "${head}"
+
+  if has_no_changes; then
+    # If the user already included all changes then we are done.
+    break
+  fi
+
+  while :; do
+    echo -e "\n\e[1;34mDone splitting? (Y/n)\e[0m"
+    read -s -n 1 done_
+    case ${done_} in
+      ""|"y"|"Y")
+        git commit --no-verify --all --reedit-message "${head}"
+        exit $?
+        ;;
+      "n"|"N")
+        break
+        ;;
+      *)
+        echo "Response '${done_}' not understood."
+        ;;
+    esac
+  done
+done
