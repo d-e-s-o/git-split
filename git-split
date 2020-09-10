@@ -15,7 +15,22 @@ has_no_changes() {
   git diff --quiet --exit-code
 }
 
+revert_changes() {
+  # We very likely have changes staged or unstaged. Revert them and then
+  # move back to the original commit.
+  git reset HEAD --hard --quiet
+  git rebase --quiet "${head}"
+  # Revert to default SIGINT handler and then resend signal. This
+  # ensures that we exit with the "correct" exit code.
+  trap - SIGINT
+  kill -s INT "$$"
+}
+
 head=$(git rev-parse HEAD)
+
+# Make sure to revert changes if the user cancels the operation.
+trap revert_changes SIGINT
+
 git reset HEAD^ --quiet
 git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
 
