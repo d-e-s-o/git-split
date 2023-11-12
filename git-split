@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2020 Daniel Mueller <deso@posteo.net>
+# Copyright (C) 2020-2023 Daniel Mueller <deso@posteo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set -e -o pipefail
@@ -35,7 +35,7 @@ git reset HEAD^ --quiet
 git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
 
 while :; do
-  git commit --no-verify --patch --reedit-message "${head}"
+  git commit --no-verify --patch --reedit-message "${head}" || true
 
   if has_no_changes; then
     # If the user already included all changes then we are done.
@@ -47,8 +47,8 @@ while :; do
     read -s -n 1 done_
     case ${done_} in
       ""|"y"|"Y")
-        git commit --no-verify --all --reedit-message "${head}"
-        exit $?
+        git commit --no-verify --all --reedit-message "${head}" || continue
+        exit
         ;;
       "n"|"N")
         break
