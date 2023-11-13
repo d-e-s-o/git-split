@@ -28,8 +28,9 @@ revert_changes() {
 
 head=$(git rev-parse HEAD)
 
-# Make sure to revert changes if the user cancels the operation.
-trap revert_changes SIGINT
+# Make sure to revert changes if the user cancels the operation or any
+# command fails.
+trap revert_changes SIGINT ERR
 
 git reset HEAD^ --quiet
 git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
