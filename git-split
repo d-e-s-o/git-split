@@ -12,7 +12,7 @@ cd_to_toplevel
 require_clean_work_tree $cmd
 
 has_no_changes() {
-  git diff --quiet --exit-code
+  git diff --quiet --exit-code ${@}
 }
 
 revert_changes() {
@@ -36,7 +36,18 @@ git reset HEAD^ --quiet
 git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
 
 while :; do
-  git commit --no-verify --patch --reedit-message "${head}" || true
+  # We use separate git add & git commit invocation because git commit
+  # --patch prints undesirable status stuff when stopped directly with
+  # 'q' without adding anything.
+  git add --patch
+  # Only attempt to commit something if the user staged changes.
+  if ! has_no_changes --staged; then
+    # On error, be sure to revert any staged changes to give the user a
+    # chance to redo them.
+    git commit --no-verify --reedit-message "${head}" \
+      || git reset HEAD --quiet \
+      || true
+  fi
 
   if has_no_changes; then
     # If the user already included all changes then we are done.
