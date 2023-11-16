@@ -27,19 +27,25 @@ revert_changes() {
 }
 
 head=$(git rev-parse HEAD)
+all_files="$(git show --no-prefix --name-only --format='' "${head}" | xargs)"
 
 # Make sure to revert changes if the user cancels the operation or any
 # command fails.
 trap revert_changes SIGINT ERR
 
+if [ $# -gt 0 ]; then
+  add_files="$@"
+else
+  add_files="${all_files}"
+fi
 git reset HEAD^ --quiet
-git add --intent-to-add $(git show --no-prefix --name-only --format='' "${head}" | xargs)
+git add --intent-to-add ${all_files}
 
 while :; do
   # We use separate git add & git commit invocation because git commit
   # --patch prints undesirable status stuff when stopped directly with
   # 'q' without adding anything.
-  git add --patch
+  git add --patch ${add_files}
   # Only attempt to commit something if the user staged changes.
   if ! has_no_changes --staged; then
     # On error, be sure to revert any staged changes to give the user a
