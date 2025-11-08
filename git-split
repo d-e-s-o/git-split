@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2020-2023 Daniel Mueller <deso@posteo.net>
+# Copyright (C) 2020-2025 Daniel Mueller <deso@posteo.net>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set -e -o pipefail
@@ -39,7 +39,10 @@ else
   add_files="${all_files}"
 fi
 git reset HEAD^ --quiet
-git add --intent-to-add ${all_files}
+# The '--ignore-removal' option is necessary to correctly handle deleted
+# files: without it those will already show up as staged, which means a
+# later 'git add --patch' won't allow the user to modify them.
+git add --ignore-removal --intent-to-add ${all_files}
 
 while :; do
   # We use separate git add & git commit invocation because git commit
